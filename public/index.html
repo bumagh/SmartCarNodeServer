@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>机器人控制器</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-family: Arial, sans-serif;
+        }
+        .control-panel {
+            margin: 20px;
+            padding: 20px;
+            border: 2px solid #333;
+            border-radius: 10px;
+            background: #f0f0f0;
+        }
+        .direction-controls {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            margin: 10px 0;
+        }
+        button {
+            padding: 15px;
+            font-size: 18px;
+            min-width: 80px;
+            cursor: pointer;
+            background: #4CAF50;
+            border: none;
+            color: white;
+            border-radius: 5px;
+        }
+        button:active {
+            background: #45a049;
+        }
+        #stopBtn {
+            background: #f44336;
+        }
+        #stopBtn:active {
+            background: #da190b;
+        }
+        #status {
+            margin-top: 10px;
+            padding: 10px;
+            color: white;
+            border-radius: 5px;
+        }
+        .connected {
+            background: #4CAF50;
+        }
+        .disconnected {
+            background: #f44336;
+        }
+        #deviceId {
+            padding: 8px;
+            margin: 10px 0;
+            width: 200px;
+        }
+    </style>
+</head>
+<body>
+    <div class="control-panel">
+        <input type="text" id="deviceId" placeholder="输入目标设备ID">
+        <div class="direction-controls">
+            <button></button>
+            <button onclick="sendCommand('up')">↑</button>
+            <button></button>
+            <button onclick="sendCommand('left')">←</button>
+            <button onclick="sendCommand('stop')">●</button>
+            <button onclick="sendCommand('right')">→</button>
+            <button></button>
+            <button onclick="sendCommand('down')">↓</button>
+            <button></button>
+        </div>
+        <div id="status" class="disconnected">未连接</div>
+    </div>
+
+    <script>
+        const ws = new WebSocket('ws://101.43.115.124:8080');
+        let isConnected = false;
+
+        // 连接状态处理
+        ws.onopen = () => {
+            isConnected = true;
+            updateStatus();
+            console.log('已连接到WebSocket服务器');
+        };
+
+        ws.onclose = () => {
+            isConnected = false;
+            updateStatus();
+            console.log('连接已关闭');
+        };
+
+        ws.onerror = (error) => {
+            console.error('WebSocket错误:', error);
+        };
+
+        function updateStatus() {
+            const statusElem = document.getElementById('status');
+            statusElem.textContent = isConnected ? '已连接到服务器' : '连接已断开';
+            statusElem.className = isConnected ? 'connected' : 'disconnected';
+        }
+
+        function sendCommand(command) {
+            if (!isConnected) {
+                alert('未连接到服务器！');
+                return;
+            }
+
+            const deviceId = document.getElementById('deviceId').value;
+            if (!deviceId) {
+                alert('请输入目标设备ID');
+                return;
+            }
+
+            const message = {
+                type: 'control',
+                target: deviceId,
+                command: command,
+                source: 'web-controller'
+            };
+
+            ws.send(JSON.stringify(message));
+            console.log(`已发送指令：${command} 到设备：${deviceId}`);
+        }
+    </script>
+</body>
+</html>
